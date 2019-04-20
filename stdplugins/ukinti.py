@@ -48,18 +48,25 @@ async def _(event):
     if event.is_private:
         return False
     input_str = event.pattern_match.group(1)
+    if input_str:
+        chat = await event.get_chat()
+        if not (chat.admin_rights or chat.creator):
+            await event.edit("`You aren't an admin here!`")
+            return False
     p = 0
+    b = 0
     c = 0
     d = 0
     e = []
     m = 0
+    n = 0
     y = 0
     w = 0
     o = 0
     q = 0
     r = 0
     await event.edit("Searching Participant Lists.")
-    async for i in borg.iter_participants(event.chat_id, aggressive=True):
+    async for i in borg.iter_participants(event.chat_id):
         p = p + 1
         #
         # Note that it's "reversed". You must set to ``True`` the permissions
@@ -68,84 +75,90 @@ async def _(event):
             until_date=None,
             view_messages=True
         )
-        if i.deleted:
-            d = d + 1
-            if input_str == "d":
-                try:
-                    await borg(functions.channels.EditBannedRequest(event.chat_id, i, rights))
-                    c = c + 1
-                except UserAdminInvalidError as exc:
-                    await event.edit("I need admin priveleges to perform this action!")
-                    break
-                except:
-                    e.append("ERROR")
         if isinstance(i.status, UserStatusEmpty):
             y = y + 1
-            if input_str == "y":
-                try:
-                    await borg(functions.channels.EditBannedRequest(event.chat_id, i, rights))
-                    c = c + 1
-                except UserAdminInvalidError as exc:
+            if "y" in input_str:
+                status, error_message = await ban_user(event.chat_id, i, rights)
+                if not status:
                     await event.edit("I need admin priveleges to perform this action!")
+                    e.append(str(e))
                     break
-                except:
-                    e.append("ERROR")
+                else:
+                    c = c + 1
         if isinstance(i.status, UserStatusLastMonth):
             m = m + 1
-            if input_str == "m":
-                try:
-                    await borg(functions.channels.EditBannedRequest(event.chat_id, i, rights))
-                    c = c + 1
-                except UserAdminInvalidError as exc:
+            if "m" in input_str:
+                status, error_message = await ban_user(event.chat_id, i, rights)
+                if not status:
                     await event.edit("I need admin priveleges to perform this action!")
+                    e.append(str(e))
                     break
-                except:
-                    e.append("ERROR")
+                else:
+                    c = c + 1
         if isinstance(i.status, UserStatusLastWeek):
             w = w + 1
-            if input_str == "w":
-                try:
-                    await borg(functions.channels.EditBannedRequest(event.chat_id, i, rights))
-                    c = c + 1
-                except UserAdminInvalidError as exc:
+            if "w" in input_str:
+                status, error_message = await ban_user(event.chat_id, i, rights)
+                if not status:
                     await event.edit("I need admin priveleges to perform this action!")
+                    e.append(str(e))
                     break
-                except:
-                    e.append("ERROR")
+                else:
+                    c = c + 1
         if isinstance(i.status, UserStatusOffline):
             o = o + 1
-            if input_str == "o":
-                try:
-                    await borg(functions.channels.EditBannedRequest(event.chat_id, i, rights))
-                    c = c + 1
-                except UserAdminInvalidError as exc:
+            if "o" in input_str:
+                status, error_message = await ban_user(event.chat_id, i, rights)
+                if not status:
                     await event.edit("I need admin priveleges to perform this action!")
+                    e.append(str(e))
                     break
-                except:
-                    e.append("ERROR")
+                else:
+                    c = c + 1
         if isinstance(i.status, UserStatusOnline):
             q = q + 1
-            if input_str == "q":
-                try:
-                    await borg(functions.channels.EditBannedRequest(event.chat_id, i, rights))
-                    c = c + 1
-                except UserAdminInvalidError as exc:
+            if "q" in input_str:
+                status, error_message = await ban_user(event.chat_id, i, rights)
+                if not status:
                     await event.edit("I need admin priveleges to perform this action!")
+                    e.append(str(e))
                     break
-                except:
-                    e.append("ERROR")
+                else:
+                    c = c + 1
         if isinstance(i.status, UserStatusRecently):
             r = r + 1
-            if input_str == "r":
-                try:
-                    await borg(functions.channels.EditBannedRequest(event.chat_id, i, rights))
-                    c = c + 1
-                except UserAdminInvalidError as exc:
+            if "r" in input_str:
+                status, error_message = await ban_user(event.chat_id, i, rights)
+                if not status:
                     await event.edit("I need admin priveleges to perform this action!")
+                    e.append(str(e))
                     break
-                except:
-                    e.append("ERROR")
-    required_string = """Kicked {} / {} users
+                else:
+                    c = c + 1
+        if i.bot:
+            b = b + 1
+            if "b" in input_str:
+                status, error_message = await ban_user(event.chat_id, i, rights)
+                if not status:
+                    await event.edit("I need admin priveleges to perform this action!")
+                    e.append(str(e))
+                    break
+                else:
+                    c = c + 1
+        elif i.deleted:
+            d = d + 1
+            if "d" in input_str:
+                status, error_message = await ban_user(event.chat_id, i, rights)
+                if not status:
+                    await event.edit("I need admin priveleges to perform this action!")
+                    e.append(str(e))
+                    break
+                else:
+                    c = c + 1
+        elif i.status is None:
+            n = n + 1
+    if input_str:
+        required_string = """Kicked {} / {} users
 Deleted Accounts: {}
 UserStatusEmpty: {}
 UserStatusLastMonth: {}
@@ -153,9 +166,10 @@ UserStatusLastWeek: {}
 UserStatusOffline: {}
 UserStatusOnline: {}
 UserStatusRecently: {}
-    """
-    await event.edit(required_string.format(c, p, d, y, m, w, o, q, r))
-    await asyncio.sleep(5)
+Bots: {}
+None: {}"""
+        await event.edit(required_string.format(c, p, d, y, m, w, o, q, r, b, n))
+        await asyncio.sleep(5)
     await event.edit("""Total: {} users
 Deleted Accounts: {}
 UserStatusEmpty: {}
@@ -163,4 +177,14 @@ UserStatusLastMonth: {}
 UserStatusLastWeek: {}
 UserStatusOffline: {}
 UserStatusOnline: {}
-UserStatusRecently: {}""".format(p, d, y, m, w, o, q, r))
+UserStatusRecently: {}
+Bots: {}
+None: {}""".format(p, d, y, m, w, o, q, r, b, n))
+
+
+async def ban_user(chat_id, i, rights):
+    try:
+        await borg(functions.channels.EditBannedRequest(chat_id, i, rights))
+        return True, None
+    except Exception as exc:
+        return False, str(e)
